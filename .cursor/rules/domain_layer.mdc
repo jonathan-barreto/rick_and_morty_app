@@ -1,0 +1,88 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Domain Layer
+
+Follow the structure and code examples below exactly as they are. Maintain the same file paths, formatting, naming conventions, and architecture. Do not change or add anything beyond what is shown. Be 100% consistent with the example.
+
+// lib/app/domain/entities/example_entity.dart
+class ExampleEntity {
+  final String id;
+  final String title;
+  final String description;
+  final DateTime createdAt;
+
+  const ExampleEntity({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.createdAt,
+  });
+}
+
+// lib/app/domain/params/example_param.dart
+class ExampleParam {
+  final String title;
+  final String description;
+
+  const ExampleParam({
+    required this.title,
+    required this.description,
+  });
+}
+
+// lib/app/domain/repositories/example_repository.dart
+// lib/app/core/either/either.dart
+abstract class ExampleRepository {
+  Future<Either<Failure, ExampleEntity>> getExample({
+    required ExampleParam param,
+  });
+}
+
+// lib/app/domain/usecases/get_example_usecase.dart
+// lib/app/core/either/either.dart
+// lib/app/core/usecase/usecase.dart
+class GetExampleUsecase implements Usecase<ExampleEntity, ExampleParam> {
+  final ExampleRepository _repository;
+
+  GetExampleUsecase({required ExampleRepository repository})
+      : _repository = repository;
+
+  @override
+  Future<Either<Failure, ExampleEntity>> call(ExampleParam param) {
+    return _repository.getExample(param: param);
+  }
+}
+
+// lib/app/domain/mappers/example_mapper.dart
+class ExampleMapper {
+  static ExampleEntity toEntity(ExampleModel model) {
+    return ExampleEntity(
+      id: model.id ?? '',
+      title: model.title ?? '',
+      description: model.description ?? '',
+      createdAt: model.createdAt != null
+          ? DateTime.parse(model.createdAt!)
+          : DateTime.now(),
+    );
+  }
+
+  static ExampleModel toModel(ExampleEntity entity) {
+    return ExampleModel(
+      id: entity.id,
+      title: entity.title,
+      description: entity.description,
+      createdAt: entity.createdAt.toIso8601String(),
+    );
+  }
+}
+
+

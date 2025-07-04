@@ -1,0 +1,127 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Data Layer
+
+Follow the structure and code examples below exactly as they are. Maintain the same file paths, formatting, naming conventions, and architecture. Do not change or add anything beyond what is shown. Be 100% consistent with the example.
+
+// lib/app/data/models/example_model.dart
+import 'dart:convert';
+
+class ExampleModel {
+  final String? id;
+  final String? title;
+  final String? description;
+  final String? createdAt;
+
+  ExampleModel({
+    this.id,
+    this.title,
+    this.description,
+    this.createdAt,
+  });
+
+  factory ExampleModel.fromMap(Map<String, dynamic> map) {
+    return ExampleModel(
+      id: map['id'],
+      title: map['title'],
+      description: map['description'],
+      createdAt: map['createdAt'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'createdAt': createdAt,
+    };
+  }
+
+  String toJson() => json.encode(toMap());
+}
+
+// lib/app/data/datasources/example_datasource.dart
+import 'package:app/core/consts/endpoints.dart';
+import 'package:app/core/errors/exceptions.dart';
+import 'package:app/core/http_client/http_client.dart';
+import 'package:app/data/models/example_model.dart';
+import 'package:app/domain/params/example_param.dart';
+
+abstract class ExampleDatasource {
+  Future<ExampleModel> fetchExample({required ExampleParam param});
+}
+
+class ExampleDatasourceImpl implements ExampleDatasource {
+  final HttpClient _httpClient;
+
+  ExampleDatasourceImpl({required HttpClient httpClient}) : _httpClient = httpClient;
+
+  @override
+  Future<ExampleModel> fetchExample({required ExampleParam param}) async {
+    try {
+      final queryParameters = {
+        'title': param.title,
+        'description': param.description,
+      };
+
+      final response = await _httpClient.get(
+        endpoint: Endpoints.example,
+        queryParameters: queryParameters,
+      );
+
+      if (response.data == null) {
+        throw UnexpectedException(message: 'Example data not found');
+      }
+
+      return ExampleModel.fromMap(response.data);
+    } catch (e) {
+      if (e is HttpException || e is UnexpectedException) {
+        rethrow;
+      }
+
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+}
+
+// lib/app/data/repositories/example_repository_impl.dart
+import 'package:app/core/errors/failures.dart';
+import 'package:app/core/either/either.dart';
+import 'package:app/domain/entities/example_entity.dart';
+import 'package:app/domain/params/example_param.dart';
+import 'package:app/domain/repositories/example_repository.dart';
+import 'package:app/data/datasources/example_datasource.dart';
+import 'package:app/data/models/example_model.dart';
+import 'package:app/domain/mappers/example_mapper.dart';
+
+class ExampleRepositoryImpl implements ExampleRepository {
+  final ExampleDatasource _datasource;
+
+  ExampleRepositoryImpl({required ExampleDatasource datasource}) : _datasource = datasource;
+
+  @override
+  Future<Either<Failure, ExampleEntity>> getExample({required ExampleParam param}) async {
+    try {
+      final ExampleModel? model = await _datasource.fetchExample(param: param);
+
+      if (model == null) {
+        return Left(Failure(message: 'No data found'));
+      }
+
+      final ExampleEntity entity = ExampleMapper.toEntity(model);
+      return Right(entity);
+    } catch (e) {
+      return Left(Failure(message: e.toString()));
+    }
+  }
+}
